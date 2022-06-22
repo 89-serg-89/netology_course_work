@@ -14,6 +14,18 @@ class Advertisement {
     const searchParams = {
       isDeleted: false
     }
+    if (params.shortTitle) {
+      searchParams.shortTitle = { $regex: params.shortTitle, $options: 'i' }
+    }
+    if (params.description) {
+      searchParams.description = { $regex: params.description, $options: 'i' }
+    }
+    if (params.userId) {
+      searchParams.user = params.userId
+    }
+    if (params.tags) {
+      searchParams.tags = params.tags
+    }
     return advertisementModel.find(searchParams)
   }
 

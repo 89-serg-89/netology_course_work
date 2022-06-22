@@ -32,7 +32,7 @@ app.use(
     }),
     saveUninitialized: false,
     secret: 'netology course',
-    resave: true,
+    resave: true, // true
     cookie: { secure: false }
   })
 )
