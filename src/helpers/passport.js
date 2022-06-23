@@ -1,6 +1,6 @@
 const passport = require('passport')
 const LocalStrategy = require('passport-local').Strategy
-const usersModule = require('../modules/user_module')
+const usersModule = require('../modules/user')
 const getHash = require('./crypto')
 
 /**

@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { isAuthenticated } = require('../../helpers/passport')
-const advertisementModule = require('../../modules/advertisement_module')
+const advertisementModule = require('../../modules/advertisement')
 const fileMiddleware = require('../../middleware/file')
 
 router.post('/', isAuthenticated, fileMiddleware.fields([

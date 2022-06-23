@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { auth } = require('../../helpers/passport')
-const userModule = require('../../modules/user_module')
+const userModule = require('../../modules/user')
 
 router.post('/signup', async (req, res) => {
   try {
@@ -30,7 +30,7 @@ router.post('/signup', async (req, res) => {
 
 router.post('/signin', auth, async (req, res) => {
   try {
-    const { _id: id, email, name, contactPhone } = req.user
+    const { id, email, name, contactPhone } = req.user
     res.status(200)
     res.json({
       data: { id, email, name, contactPhone },
