@@ -1,4 +1,6 @@
 const socketIO = require('socket.io')
+const userModel = require('../modules/user')
+const chatModel = require('../modules/chat')
 
 class Socket {
   constructor (io) {
@@ -12,47 +14,47 @@ class Socket {
 
   onConnection (socket) {
     this.socket = socket
-    console.log(socket.request.user)
+    // console.log(socket.request.user)
+    // if (!socket.request?.isAuthenticated()) return
     // roomName = socketIO.handshake.query.roomName
     // console.log(`Socket roomName: ${roomName}`)
     // socketIO.join(roomName)
-    socket.on('message', this.onMessage.bind(this))
+    socket.on('isAuth', this.onIsAuth.bind(this))
+    socket.on('getUsers', this.onUsers.bind(this))
+    socket.on('getHistory', this.onHistory.bind(this))
+    socket.on('sendMessage', this.onMessage.bind(this))
+
+    setTimeout(() => {
+      this.socket.emit('status', 'connect')
+    }, 1000)
   }
 
-  onMessage (msg) {
+  onIsAuth () {
+    this.socket.emit('auth', `${this.socket.request?.isAuthenticated()}`)
+  }
+
+  onUsers = async () => {
+    const res = await userModel.find({ _id: { $ne: this.socket.request.user.id } }).select('id name')
+    this.socket.emit('users', res)
+  }
+
+  onHistory (msg) {
     console.log(msg)
+  }
+
+  onMessage = async (msg) => {
     // msg.type = `room: ${roomName}`
     // this.io.to(roomName).emit('message', msg)
-    this.socket.emit('message', msg)
+    // this.socket.emit('message', msg)
+    const receiver = await userModel.findById(msg.receiver)
+    const data = {
+      text: msg.text,
+      receiver,
+      author: this.socket.request.user
+    }
+    const res = await chatModel.sendMessage(data)
   }
 }
-
-// const connect = (socket) => {
-//   // const socket = new io.Server(server, {
-//   //   cors: {
-//   //     origin: "*",
-//   //     methods: ["GET", "POST"],
-//   //     allowedHeaders: ["my-custom-header"],
-//   //     credentials: true
-//   //   }
-//   // })
-//   socket = io(server)
-//   socket.on('connection', socketIO => {
-//     console.log(socketIO.request.session)
-//     // socket = socketIO
-//     roomName = socketIO.handshake.query.roomName
-//     console.log(`Socket roomName: ${roomName}`)
-//     socketIO.join(roomName)
-//     socketIO.on('message', onMessage)
-//   })
-// }
-//
-// const onMessage = async (msg) => {
-//   console.log(msg)
-//   msg.type = `room: ${roomName}`
-//   socket.to(roomName).emit('message', msg)
-//   socket.emit('message', msg)
-// }
 
 module.exports = {
   socketIO,

@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser')
 const { passport } = require('./helpers/passport')
 const socketHelper = require('./helpers/socket')
 
+const indexRouter = require('./routes/')
 const apiRouter = require('./routes/api')
 const apiAdvertisementRouter = require('./routes/api/advertisement')
 
@@ -24,17 +25,16 @@ app.use(function(req, res, next) {
 const { sessionMiddleware } = require('./middleware/session')
 const errorMiddleware = require('./middleware/error')
 
+app.set('views', path.join(__dirname, '/views'))
+app.set('view engine', 'ejs')
+
 app.use(cookieParser())
 app.use(sessionMiddleware)
 
 app.use(passport.initialize())
 app.use(passport.session())
 
-const io = socketHelper.socketIO(server, {
-  cors: {
-    origin: '*'
-  }
-})
+const io = socketHelper.socketIO(server)
 const factoryMiddlewareSocket = middleware => (socket, next) => middleware(socket.request, {}, next)
 io.use(factoryMiddlewareSocket(sessionMiddleware))
 io.use(factoryMiddlewareSocket(passport.initialize()))
@@ -47,6 +47,7 @@ app.use(bodyParser.json())
 app.use('/public', express.static(path.join(__dirname, '/public')))
 
 // routes
+app.use('/', indexRouter)
 app.use('/api', apiRouter)
 app.use('/api/advertisements', apiAdvertisementRouter)
 

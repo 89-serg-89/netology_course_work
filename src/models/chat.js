@@ -13,14 +13,12 @@ const chatSchema = new Schema({
     default: Date.now,
     require: true
   },
-  messages: {
-    type: [{
-      userId: {
-        type: Schema.Types.ObjectId,
-        ref: 'Message'
-      }
-    }],
-  }
+  messages: [{
+    message: {
+      type: Schema.Types.ObjectId,
+      ref: 'Message'
+    }
+  }]
 })
 
 chatSchema.set('toJSON', {

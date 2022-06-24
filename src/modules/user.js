@@ -17,6 +17,10 @@ class UserModule {
   static findById (id) {
     return usersModel.findById(id)
   }
+
+  static find (params) {
+    return usersModel.find(params)
+  }
 }
 
 module.exports = UserModule

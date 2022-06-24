@@ -3,6 +3,21 @@ const router = express.Router()
 const { auth } = require('../../helpers/passport')
 const userModule = require('../../modules/user')
 
+router.get('/logout', (req, res, next) => {
+  try {
+    req.logout((err) => {
+      if (err) return next(err)
+      res.json({
+        status: 'ok'
+      })
+    })
+  } catch (e) {
+    console.log('Error:', e)
+    res.status(400)
+    res.end()
+  }
+})
+
 router.post('/signup', async (req, res) => {
   try {
     const data = req.body
