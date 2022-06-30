@@ -1,6 +1,6 @@
 const socketIO = require('socket.io')
-const userModel = require('../modules/user')
-const chatModel = require('../modules/chat')
+const userModule = require('../modules/user')
+const chatModule = require('../modules/chat')
 
 class Socket {
   constructor (io) {
@@ -13,46 +13,59 @@ class Socket {
   }
 
   onConnection (socket) {
-    this.socket = socket
-    // console.log(socket.request.user)
-    // if (!socket.request?.isAuthenticated()) return
-    // roomName = socketIO.handshake.query.roomName
-    // console.log(`Socket roomName: ${roomName}`)
-    // socketIO.join(roomName)
-    socket.on('isAuth', this.onIsAuth.bind(this))
-    socket.on('getUsers', this.onUsers.bind(this))
-    socket.on('getHistory', this.onHistory.bind(this))
-    socket.on('sendMessage', this.onMessage.bind(this))
+    socket.on('isAuth', this.onIsAuth.bind(this, socket))
+    socket.on('getUsers', this.onUsers.bind(this, socket))
+    socket.on('getHistory', this.onHistory.bind(this, socket))
+    socket.on('sendMessage', this.onMessage.bind(this, socket))
 
-    setTimeout(() => {
-      this.socket.emit('status', 'connect')
-    }, 1000)
+    chatModule.subscribe(async (data) => {
+      if (socket.connected) {
+        if (![data.author.id, data.receiver.id].includes(socket.request.user.id)) return
+        socket.join(data.chatId)
+        const msgSocket = {
+          username: data.author.name,
+          text: data.message
+        }
+        socket.emit('newMessage', msgSocket)
+      }
+    })
   }
 
-  onIsAuth () {
-    this.socket.emit('auth', `${this.socket.request?.isAuthenticated()}`)
+  onIsAuth (socket) {
+    socket.emit('auth', `${socket.request?.isAuthenticated()}`)
   }
 
-  onUsers = async () => {
-    const res = await userModel.find({ _id: { $ne: this.socket.request.user.id } }).select('id name')
-    this.socket.emit('users', res)
+  onUsers = async (socket) => {
+    const res = await userModule.find({ _id: { $ne: socket.request.user?.id } }).select('id name')
+    socket.emit('users', res)
   }
 
-  onHistory (msg) {
-    console.log(msg)
+  onHistory = async (socket, msg) => {
+    const receiver = await userModule.findById(msg.id)
+    const chat = await chatModule.find([socket.request.user, receiver])
+      .populate({
+        path: 'messages',
+        populate: {
+          path: 'author',
+          model: 'Users',
+          select: 'name'
+        }
+      })
+    const messages = chat?.messages
+    socket.emit('chatHistory', messages?.map(item => ({
+      username: item.author.name,
+      text: item.text
+    })))
   }
 
-  onMessage = async (msg) => {
-    // msg.type = `room: ${roomName}`
-    // this.io.to(roomName).emit('message', msg)
-    // this.socket.emit('message', msg)
-    const receiver = await userModel.findById(msg.receiver)
+  onMessage = async (socket, msg) => {
+    const receiver = await userModule.findById(msg.receiver)
     const data = {
       text: msg.text,
       receiver,
-      author: this.socket.request.user
+      author: socket.request.user
     }
-    const res = await chatModel.sendMessage(data)
+    await chatModule.sendMessage(data)
   }
 }
 

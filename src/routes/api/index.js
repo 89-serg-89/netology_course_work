@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { auth } = require('../../helpers/passport')
+const { auth, passport } = require('../../helpers/passport')
 const userModule = require('../../modules/user')
 
 router.get('/logout', (req, res, next) => {
@@ -56,6 +56,12 @@ router.post('/signin', auth, async (req, res) => {
     res.status(400)
     res.end()
   }
+})
+
+router.get('/check-user', (req, res) => {
+  res.json({
+    user: req.user
+  })
 })
 
 module.exports = router

@@ -23,6 +23,7 @@
 
     <div id="is-auth-box" class="d-none">
         <a href="#" id="logout" class="btn btn-primary mb-3">logout</a>
+        <a href="#" id="check-user" class="btn btn-primary mb-3">check user</a>
 
         <div class="users">
             <p>Собеседники:</p>
@@ -54,9 +55,10 @@
   const msg = document.getElementById('text-comm')
   const btnSendMsg = document.getElementById('submit-comm')
   const btnLogout = document.getElementById('logout')
+  const btnCheckUser = document.getElementById('check-user')
   let socket
 
-  const submit = async (e) => {
+  const signin = async (e) => {
     e.preventDefault()
     try {
       const data = JSON.stringify(Object.fromEntries(new FormData(e.target).entries()))
@@ -67,7 +69,7 @@
       })
       const json = await response.json()
       if (json.status === 'ok') {
-        isAuth(true)
+        window.location.reload()
       } else {
         infoForm.innerText = json.error
         infoForm.classList.remove('d-none')
@@ -76,7 +78,6 @@
       console.log(e)
     }
   }
-
   const logout = async () => {
     try {
       const response = await fetch('/api/logout', {
@@ -90,15 +91,24 @@
       console.log(e)
     }
   }
-
-  const isAuth = status => {
-    if (status) {
-      socket.emit('getUsers')
-      signinForm.classList.add('d-none')
-      isAuthBox.classList.remove('d-none')
+  const checkUser = () => {
+    try {
+      fetch('/api/check-user', {
+        method: 'get'
+      })
+    } catch (e) {
+      console.log(e)
     }
   }
-
+  const isAuth = status => {
+    if (status) {
+      setTimeout(() => {
+        socket.emit('getUsers')
+        signinForm.classList.add('d-none')
+        isAuthBox.classList.remove('d-none')
+      }, 200)
+    }
+  }
   const addMsg = msg => {
     const toast = `
         <div class="toast show">
@@ -115,22 +125,35 @@
   }
   const onAuth = msg => isAuth(msg === 'true')
   const onUsers = msg => {
+    usersSelect.innerHTML = ''
     for (const item of msg) {
       const opt = `
           <option value="${item.id}">${item.name}</option>
         `
       usersSelect.insertAdjacentHTML('beforeend', opt)
     }
+    changeUsers()
   }
-
+  const onChatHistory = msg => {
+    if (msg) msg.forEach(item => addMsg(item))
+  }
+  const changeUsers = () => {
+    toastWrap.innerHTML = ''
+    socket.emit('getHistory', {
+      id: usersSelect.value || ''
+    })
+  }
   const socketConnect = () => {
     socket = io.connect('/')
-    socket.emit('isAuth')
-    socket.on('message', addMsg)
-    socket.on('auth', onAuth)
-    socket.on('users', onUsers)
+    socket.on('connect', () => {
+      console.log('connect')
+      socket.on('newMessage', addMsg)
+      socket.on('auth', onAuth)
+      socket.on('users', onUsers)
+      socket.on('chatHistory', onChatHistory)
+      setTimeout(() => socket.emit('isAuth'), 0)
+    })
   }
-
   const sendMessage = () => {
     socket.emit('sendMessage', {
       receiver: usersSelect?.value || null,
@@ -139,9 +162,11 @@
     msg.value = ''
   }
 
-  signinForm.addEventListener('submit', submit)
+  signinForm.addEventListener('submit', signin)
   btnLogout.addEventListener('click', logout)
+  btnCheckUser.addEventListener('click', checkUser)
   btnSendMsg.addEventListener('click', sendMessage)
+  usersSelect.addEventListener('change', changeUsers)
   document.addEventListener('DOMContentLoaded', socketConnect)
 </script>
 </body>

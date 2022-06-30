@@ -1,10 +1,22 @@
 const chatModel = require('../models/chat')
 const messageModel = require('../models/message')
+const EventEmitter = require('events');
+
+class SendMsg extends EventEmitter {
+  execute(func) {
+    this.on('send-msg', data => {
+      func(data)
+    })
+  }
+}
+
+const sendMsgEvent = new SendMsg()
 
 class ChatModule {
   static find (users) {
     if (!users) return null
-    return chatModel.findOne({ users })
+    const reverseUsers = [...users].reverse()
+    return chatModel.findOne({ $or: [{ users }, { users: reverseUsers }]  })
   }
 
   static async sendMessage (data) {
@@ -24,10 +36,16 @@ class ChatModule {
     chat.messages.push(message)
     await chat.save()
     await message.save()
+    sendMsgEvent.emit('send-msg', {
+      chatId: chat.id,
+      author,
+      receiver,
+      message: message.text
+    })
   }
 
-  static subscribe () {
-
+  static subscribe (callback) {
+    sendMsgEvent.execute(callback)
   }
 
   static getHistory (id) {

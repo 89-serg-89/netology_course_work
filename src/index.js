@@ -34,13 +34,6 @@ app.use(sessionMiddleware)
 app.use(passport.initialize())
 app.use(passport.session())
 
-const io = socketHelper.socketIO(server)
-const factoryMiddlewareSocket = middleware => (socket, next) => middleware(socket.request, {}, next)
-io.use(factoryMiddlewareSocket(sessionMiddleware))
-io.use(factoryMiddlewareSocket(passport.initialize()))
-io.use(factoryMiddlewareSocket(passport.session()))
-new socketHelper.Socket(io)
-
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 app.use(bodyParser.json())
@@ -52,6 +45,17 @@ app.use('/api', apiRouter)
 app.use('/api/advertisements', apiAdvertisementRouter)
 
 app.use(errorMiddleware)
+
+const io = socketHelper.socketIO(server)
+const wrapMiddlewareSocket = middleware => (socket, next) => middleware(socket.request, {}, next)
+io.use(wrapMiddlewareSocket(sessionMiddleware))
+io.use(wrapMiddlewareSocket(passport.initialize()))
+io.use(wrapMiddlewareSocket(passport.session()))
+io.use((socket, next) => {
+  if (socket.request.user) next()
+  else next(new Error('unauthorized'))
+})
+new socketHelper.Socket(io)
 
 const port = process.env.PORT || 3000
 const init = async () => {

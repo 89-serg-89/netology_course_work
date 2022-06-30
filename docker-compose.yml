@@ -1,0 +1,23 @@
+services:
+  mongoDB:
+    image: mongo
+    restart: always
+    expose:
+      - 27017
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${DB_USERNAME:-root}
+      - MONGO_INITDB_ROOT_PASSWORD=${DB_PASSWORD:-pass}
+      - MONGO_INITDB_DATABASE=${DB_NAME:-advertisement}
+  advertisement:
+    build: ./
+    container_name: advertisement_container
+    ports:
+      - 80:3000
+    environment:
+      - PORT=3000
+      - DB_USERNAME=${DB_USERNAME:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-pass}
+      - DB_NAME=${DB_NAME:-advertisement}
+      - DB_HOST=mongodb://mongoDB:27017
+    depends_on:
+      - mongoDB

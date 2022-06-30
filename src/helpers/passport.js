@@ -22,7 +22,7 @@ const verify = async (email, pass, done) => {
 const options = {
   usernameField: 'email',
   passwordField: 'password',
-  passReqToCallback: false,
+  // passReqToCallback: false,
 }
 
 const isAuthenticated = (req, res, next) => {
@@ -56,7 +56,7 @@ const auth = (req, res, next) => {
 }
 
 //  Добавление стратегии для использования
-passport.use('local', new LocalStrategy(options, verify))
+passport.use(new LocalStrategy(options, verify))
 
 // Конфигурирование Passport для сохранения пользователя в сессии
 passport.serializeUser((user, cb) => {
